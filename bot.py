@@ -7,7 +7,7 @@ import time
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
-# Список фондов: тикер/название/URL страницы
+# Список фондов: название, URL страницы, имя файла для хранения последней цены
 FUNDS = [
     {"name": "2x ОФЗ", "url": "https://investfunds.ru/funds/10817/", "file": "10817.txt"},
     {"name": "Фонд 54", "url": "https://investfunds.ru/funds/54/", "file": "54.txt"},
@@ -102,3 +102,10 @@ def main():
         now = datetime.now()
         # Время для отправки: 12:00 и 18:00 МСК
         if now.hour in [12, 18] and now.minute == 0:
+            message = build_message()
+            send_message(message)
+            time.sleep(60)  # подождать минуту, чтобы не отправить повторно в ту же минуту
+        time.sleep(10)  # проверка каждые 10 секунд
+
+if __name__ == "__main__":
+    main()
