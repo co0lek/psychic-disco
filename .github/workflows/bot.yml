@@ -1,0 +1,20 @@
+name: Fund Bot
+
+on:
+  schedule:
+    # 12:00 МСК (09:00 UTC)
+    - cron: "0 9 * * *"
+    # 18:00 МСК (15:00 UTC)
+    - cron: "0 15 * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - run: python bot.py
