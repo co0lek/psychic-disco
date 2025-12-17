@@ -6,20 +6,14 @@ import time
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
-MARKET = "shares"
-BOARD = "TQTF"
-
 FUNDS = {
     "RU000A108ZB2": "2x ОФЗ",
     "LQDT": "Ликвидность",
 }
 
 def get_prices(ticker):
-    url = (
-        f"https://iss.moex.com/iss/engines/stock/markets/{MARKET}/"
-        f"boards/{BOARD}/securities/{ticker}.json"
-        f"?iss.meta=off&iss.only=marketdata"
-    )
+    """Получение цены ПИФа с MOEX"""
+    url = f"https://iss.moex.com/iss/engines/fund/markets/unitfund/securities/{ticker}.json?iss.meta=off&iss.only=marketdata"
 
     try:
         r = requests.get(url, timeout=10).json()
@@ -33,15 +27,18 @@ def get_prices(ticker):
     if not rows or not cols:
         return None, None
 
-    if "LAST" not in cols or "PREVPRICE" not in cols:
-        return None, None
-
     data = rows[0]
 
-    last = data[cols.index("LAST")]
-    prev = data[cols.index("PREVPRICE")]
+    # Поле LAST — последняя цена, CHANGE — изменение
+    try:
+        last = data[cols.index("LAST")]
+        change = data[cols.index("CHANGE")]
 
-    if last is None or prev is None:
+        if last is None or change is None:
+            return None, None
+
+        prev = last - change  # предыдущая цена
+    except Exception:
         return None, None
 
     return last, prev
@@ -75,7 +72,7 @@ def build_message():
             f"Изменение за день: {sign}{change:.2f}%\n"
         )
 
-        time.sleep(0.3)
+        time.sleep(0.3)  # небольшой таймаут, чтобы не перегружать сервер
 
     return "\n".join(lines)
 
