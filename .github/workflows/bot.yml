@@ -1,24 +1,29 @@
-name: Fund Bot
+name: Telegram Fund Bot
 
 on:
   schedule:
-    # 12:00 МСК (09:00 UTC)
-    - cron: "0 9 * * *"
-    # 18:00 МСК (15:00 UTC)
-    - cron: "0 15 * * *"
+    # запуск каждый день в 12:00 и 18:00 МСК
+    - cron: '0 9,15 * * *' # UTC (12:00 и 18:00 МСК)
   workflow_dispatch:
 
 jobs:
-  run:
+  run-bot:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
-      - run: pip install requests
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
       - name: Run bot
+        run: python bot.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python bot.py
