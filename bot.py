@@ -22,6 +22,7 @@ FUNDS = {
 # =========================
 # ПОЛУЧЕНИЕ ЦЕН
 # =========================
+
 def get_prices(ticker):
     url = (
         f"https://iss.moex.com/iss/engines/stock/markets/{MARKET}/"
