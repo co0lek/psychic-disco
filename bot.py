@@ -15,7 +15,7 @@ BOARD = "TQTF"
 TICKERS = [
     "LQDT",
     # можно добавить другие, например:
-    # "SBMM",
+    "SBMM",
     # "AKMM",
 ]
 
