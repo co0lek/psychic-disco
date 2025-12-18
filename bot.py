@@ -56,7 +56,7 @@ def send_message(text):
 
 def build_message():
     msk = timezone(timedelta(hours=3))
-now = datetime.now(msk).strftime("%d.%m.%Y %H:%M")
+    now = datetime.now(msk).strftime("%d.%m.%Y %H:%M")
     lines = [f"📊 Цены фондов\n{now}\n"]
 
     for ticker, name in FUNDS.items():
