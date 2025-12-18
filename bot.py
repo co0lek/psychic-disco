@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import os
 import time
 
@@ -55,7 +55,8 @@ def send_message(text):
 
 
 def build_message():
-    now = datetime.now().strftime("%d.%m.%Y %H:%M")
+    msk = timezone(timedelta(hours=3))
+now = datetime.now(msk).strftime("%d.%m.%Y %H:%M")
     lines = [f"📊 Цены фондов\n{now}\n"]
 
     for ticker, name in FUNDS.items():
