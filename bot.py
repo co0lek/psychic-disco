@@ -18,7 +18,7 @@ INSTRUMENTS = [
     {
         "ticker": "LQDT",
         "board": "TQTF",
-        "name": "Денежный рынок",
+        "name": "Ликвидность",
     },
     {
         "ticker": "RU000A108ZB2",
