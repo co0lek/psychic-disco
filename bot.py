@@ -23,7 +23,7 @@ INSTRUMENTS = [
     {
         "ticker": "RU000A108ZB2",
         "board": "TQIF",
-        "name": "ИПИФ (RU000A108ZB2)",
+        "name": "2хОФЗ",
     },
 ]
 
