@@ -1,7 +1,9 @@
 import requests
-from datetime import datetime, timezone, timedelta
 import os
+from datetime import datetime, timezone, timedelta
 import time
+
+# === НАСТРОЙКИ ===
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
@@ -9,36 +11,50 @@ CHAT_ID = os.environ["CHAT_ID"]
 MARKET = "shares"
 BOARD = "TQTF"
 
-FUNDS = {
-    "LQDT": "Денежный рынок (LQDT)",
-}
+# ⬇⬇⬇ ЗДЕСЬ ВЫ ЯВНО УКАЗЫВАЕТЕ ТИКЕРЫ ⬇⬇⬇
+TICKERS = [
+    "LQDT",
+]
 
-def get_prices(ticker):
+# =======================================
+
+
+def build_url(ticker: str) -> str:
+    """
+    ЯВНО формируем URL из тикера
+    """
     url = (
-        f"https://iss.moex.com/iss/engines/stock/markets/{MARKET}/"
-        f"boards/{BOARD}/securities/{ticker}.json"
-        f"?iss.meta=off&iss.only=marketdata"
+        "https://iss.moex.com/iss/"
+        f"engines/stock/"
+        f"markets/{MARKET}/"
+        f"boards/{BOARD}/"
+        f"securities/{ticker}.json"
+        "?iss.meta=off&iss.only=marketdata"
     )
+    return url
 
-    try:
-        r = requests.get(url, timeout=10).json()
-    except Exception:
+
+def get_price(ticker: str):
+    url = build_url(ticker)
+
+    # ← ЭТУ ССЫЛКУ ВЫ МОЖЕТЕ СКОПИРОВАТЬ И ОТКРЫТЬ В БРАУЗЕРЕ
+    print("REQUEST URL:", url)
+
+    r = requests.get(url, timeout=10)
+    r.raise_for_status()
+    data = r.json()
+
+    marketdata = data.get("marketdata", {})
+    columns = marketdata.get("columns", [])
+    rows = marketdata.get("data", [])
+
+    if not rows:
         return None, None
 
-    marketdata = r.get("marketdata", {})
-    rows = marketdata.get("data")
-    cols = marketdata.get("columns")
+    row = rows[0]
 
-    if not rows or not cols:
-        return None, None
-
-    if "LAST" not in cols or "PREVPRICE" not in cols:
-        return None, None
-
-    data = rows[0]
-
-    last = data[cols.index("LAST")]
-    prev = data[cols.index("PREVPRICE")]
+    last = row[columns.index("LAST")]
+    prev = row[columns.index("PREVPRICE")]
 
     if last is None or prev is None:
         return None, None
@@ -46,7 +62,7 @@ def get_prices(ticker):
     return last, prev
 
 
-def send_message(text):
+def send_message(text: str):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     requests.post(url, json={
         "chat_id": CHAT_ID,
@@ -54,35 +70,31 @@ def send_message(text):
     })
 
 
-def build_message():
+def main():
     msk = timezone(timedelta(hours=3))
     now = datetime.now(msk).strftime("%d.%m.%Y %H:%M")
+
     lines = [f"📊 Цены фондов\n{now}\n"]
 
-    for ticker, name in FUNDS.items():
-        last, prev = get_prices(ticker)
+    for ticker in TICKERS:
+        last, prev = get_price(ticker)
 
         if last is None or prev is None:
-            lines.append(f"{name} ({ticker})\nнет торговых данных\n")
+            lines.append(f"{ticker}\nнет торговых данных\n")
             continue
 
         change = ((last - prev) / prev) * 100
         sign = "+" if change >= 0 else ""
 
         lines.append(
-            f"{name} ({ticker})\n"
-            f"Цена: {last:.2f} ₽\n"
+            f"{ticker}\n"
+            f"Цена: {last:.4f} ₽\n"
             f"Изменение за день: {sign}{change:.2f}%\n"
         )
 
         time.sleep(0.3)
 
-    return "\n".join(lines)
-
-
-def main():
-    text = build_message()
-    send_message(text)
+    send_message("\n".join(lines))
 
 
 if __name__ == "__main__":
