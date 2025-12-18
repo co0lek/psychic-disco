@@ -37,7 +37,6 @@ def build_url(ticker: str) -> str:
 def get_price(ticker: str):
     url = build_url(ticker)
 
-    # ← ЭТУ ССЫЛКУ ВЫ МОЖЕТЕ СКОПИРОВАТЬ И ОТКРЫТЬ В БРАУЗЕРЕ
     print("REQUEST URL:", url)
 
     r = requests.get(url, timeout=10)
@@ -48,19 +47,35 @@ def get_price(ticker: str):
     columns = marketdata.get("columns", [])
     rows = marketdata.get("data", [])
 
-    if not rows:
+    if not rows or not columns:
         return None, None
 
     row = rows[0]
 
-    last = row[columns.index("LAST")]
-    prev = row[columns.index("PREVPRICE")]
+    def get_field(name):
+        if name in columns:
+            return row[columns.index(name)]
+        return None
 
-    if last is None or prev is None:
+    # Основная цена — последняя сделка или текущая рыночная
+    price = (
+        get_field("LAST")
+        or get_field("MARKETPRICE")
+        or get_field("LCURRENTPRICE")
+        or get_field("CLOSEPRICE")
+    )
+
+    # База для сравнения (вчера)
+    base = (
+        get_field("PREVPRICE")
+        or get_field("LCLOSEPRICE")
+        or get_field("MARKETPRICETODAY")
+    )
+
+    if price is None or base is None:
         return None, None
 
-    return last, prev
-
+    return float(price), float(base)
 
 def send_message(text: str):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
