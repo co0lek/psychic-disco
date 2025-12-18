@@ -10,7 +10,7 @@ MARKET = "shares"
 BOARD = "TQTF"
 
 FUNDS = {
-    "WIM2OFZ": "2x ОФЗ",
+    "LQDT": "Денежный рынок (LQDT)",
 }
 
 def get_prices(ticker):
