@@ -9,25 +9,33 @@ TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
 MARKET = "shares"
-BOARD = "TQTF"
 
-# ⬇⬇⬇ ВРУЧНУЮ УКАЗЫВАЕТЕ НУЖНЫЕ ТИКЕРЫ ⬇⬇⬇
-TICKERS = [
-    "LQDT",
-    # можно добавить другие, например:
-    "SBMM",
-    # "AKMM",
+# ⬇⬇⬇ ЗДЕСЬ ВЫ ДОБАВЛЯЕТЕ ИНСТРУМЕНТЫ ⬇⬇⬇
+# ticker  — код инструмента
+# board   — торговый режим (TQTF, TQIF и т.д.)
+# name    — отображаемое имя (произвольное)
+INSTRUMENTS = [
+    {
+        "ticker": "LQDT",
+        "board": "TQTF",
+        "name": "Денежный рынок",
+    },
+    {
+        "ticker": "RU000A108ZB2",
+        "board": "TQIF",
+        "name": "ИПИФ (RU000A108ZB2)",
+    },
 ]
 
 # ============================================
 
 
-def build_url(ticker: str) -> str:
+def build_url(ticker: str, board: str) -> str:
     return (
         "https://iss.moex.com/iss/"
         f"engines/stock/"
         f"markets/{MARKET}/"
-        f"boards/{BOARD}/"
+        f"boards/{board}/"
         f"securities/{ticker}.json"
         "?iss.meta=off&iss.only=marketdata"
     )
@@ -46,7 +54,7 @@ def extract_price_and_change(marketdata: dict):
     def v(name):
         return row[idx[name]] if name in idx else None
 
-    # ===== ЛОГИКА ДЛЯ ДЕНЕЖНЫХ ФОНДОВ / БПИФов =====
+    # ===== ДЕНЕЖНЫЕ ФОНДЫ / БПИФЫ =====
     wap = v("WAPRICE")
     wap_diff = v("WAPTOPREVWAPRICE")
     wap_diff_pct = v("WAPTOPREVWAPRICEPRCNT")
@@ -70,8 +78,8 @@ def extract_price_and_change(marketdata: dict):
     return None, None, None
 
 
-def get_price(ticker: str):
-    url = build_url(ticker)
+def get_price(ticker: str, board: str):
+    url = build_url(ticker, board)
     print("REQUEST:", url)
 
     r = requests.get(url, timeout=10)
@@ -100,14 +108,18 @@ def main():
 
     lines = [f"📊 Цены фондов\n{now}\n"]
 
-    for ticker in TICKERS:
-        price, diff_abs, diff_pct = get_price(ticker)
+    for inst in INSTRUMENTS:
+        ticker = inst["ticker"]
+        board = inst["board"]
+        name = inst.get("name", ticker)
+
+        price, diff_abs, diff_pct = get_price(ticker, board)
 
         if price is None:
-            lines.append(f"{ticker}\nнет торговых данных\n")
+            lines.append(f"{name} ({ticker})\nнет торговых данных\n")
             continue
 
-        text = f"{ticker}\nЦена: {price:.4f} ₽\n"
+        text = f"{name} ({ticker})\nЦена: {price:.4f} ₽\n"
 
         if diff_abs is not None:
             sign = "+" if diff_abs >= 0 else ""
