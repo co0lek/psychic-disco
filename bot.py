@@ -9,25 +9,29 @@ INSTRUMENTS = [
         "ticker": "LQDT",
         "board": "TQTF",
         "name": "Ликвидность",
-        "buy_price": 1.8630,  # ← укажите цену покупки или None
+        "buy_price": 1.8630,
+        "quantity": 585780,
     },
     {
         "ticker": "RU000A108ZB2",
         "board": "TQIF",
         "name": "2хОФЗ",
-        "buy_price": 153650,
+        "buy_price": 153650.0,
+        "quantity": 4,
     },
     {
         "ticker": "RU000A0JR2C1",
         "board": "TQIF",
         "name": "ВИМ Казначейский",
         "buy_price": 103.45,
+        "quantity": 9660,
     },
     {
         "ticker": "OBLG",
         "board": "TQTF",
         "name": "Российские облигации",
         "buy_price": 187.1,
+        "quantity": 5335,
     },
 ]
 
@@ -59,11 +63,6 @@ def fetch_marketdata(ticker: str, board: str):
     return dict(zip(columns, rows[0]))
 
 
-def format_price_change(change, percent):
-    sign = "+" if change > 0 else ""
-    return f"{sign}{change:.4f} ₽ ({sign}{percent:.2f}%)"
-
-
 def build_message():
     now_msk = datetime.now(MSK_TZ).strftime("%d.%m.%Y %H:%M")
     lines = [f"📊 Цены фондов\n{now_msk}\n"]
@@ -73,6 +72,7 @@ def build_message():
         board = inst["board"]
         name = inst["name"]
         buy_price = inst.get("buy_price")
+        qty = inst.get("quantity", 0)
 
         lines.append(f"{name} ({ticker})")
 
@@ -83,31 +83,39 @@ def build_message():
                 continue
 
             price = float(md["WAPRICE"])
-            lines.append(f"Цена: {price:.4f} ₽")
+            lines.append(f"Цена пая: {price:.4f} ₽")
+            lines.append(f"Количество паёв: {qty}")
 
-            day_change = md.get("WAPTOPREVWAPRICE")
-            day_percent = md.get("WAPTOPREVWAPRICEPRCNT")
+            # --- изменение за день (за 1 пай) ---
+            day_abs = md.get("WAPTOPREVWAPRICE")
+            day_pct = md.get("WAPTOPREVWAPRICEPRCNT")
 
-            if day_change is not None and day_percent is not None:
+            if day_abs is not None and day_pct is not None:
+                sign = "+" if day_abs > 0 else ""
                 lines.append(
-                    "Изменение за день: "
-                    + format_price_change(float(day_change), float(day_percent))
+                    f"За день: {sign}{float(day_abs):.4f} ₽ "
+                    f"({sign}{float(day_pct):.2f}%)"
                 )
             else:
-                lines.append("Изменение за день: нет данных")
+                lines.append("За день: нет данных")
 
-            if buy_price:
-                diff = price - buy_price
-                diff_pct = diff / buy_price * 100
-                sign = "+" if diff > 0 else ""
+            # --- результат по позиции ---
+            if buy_price and qty:
+                invested = buy_price * qty
+                current = price * qty
+                profit = current - invested
+                profit_pct = profit / invested * 100
+                sign = "+" if profit >= 0 else ""
+
                 lines.append(
-                    f"С покупки: {sign}{diff:.4f} ₽ ({sign}{diff_pct:.2f}%)"
+                    f"С покупки (всего): {sign}{profit:.2f} ₽ "
+                    f"({sign}{profit_pct:.2f}%)"
                 )
 
             lines.append("")
 
-        except Exception as e:
-            lines.append(f"ошибка получения данных\n")
+        except Exception:
+            lines.append("ошибка получения данных\n")
 
     return "\n".join(lines).strip()
 
