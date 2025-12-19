@@ -1,111 +1,122 @@
-import requests
 import os
+import requests
 from datetime import datetime, timezone, timedelta
-import time
 
-# ================= НАСТРОЙКИ =================
+# ================== НАСТРОЙКИ ==================
 
-TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
-CHAT_IDS = [
-    os.environ["CHAT_ID"],
-    os.environ["CHAT_ID_WIFE"],
-] 
-
-MARKET = "shares"
-
-# ⬇⬇⬇ ЗДЕСЬ ВЫ ДОБАВЛЯЕТЕ ИНСТРУМЕНТЫ ⬇⬇⬇
-# ticker  — код инструмента
-# board   — торговый режим (TQTF, TQIF и т.д.)
-# name    — отображаемое имя (произвольное)
 INSTRUMENTS = [
     {
         "ticker": "LQDT",
         "board": "TQTF",
         "name": "Ликвидность",
+        "buy_price": 1.8630,  # ← укажите цену покупки или None
     },
     {
         "ticker": "RU000A108ZB2",
         "board": "TQIF",
         "name": "2хОФЗ",
+        "buy_price": 153650,
     },
     {
         "ticker": "RU000A0JR2C1",
         "board": "TQIF",
         "name": "ВИМ Казначейский",
+        "buy_price": 103.45,
     },
     {
         "ticker": "OBLG",
         "board": "TQTF",
         "name": "Российские облигации",
+        "buy_price": 187.1,
     },
 ]
 
-# ============================================
+TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
+CHAT_IDS = [
+    os.environ["CHAT_ID"],
+    os.environ.get("CHAT_ID_WIFE"),
+]
 
+MOEX_URL_TEMPLATE = (
+    "https://iss.moex.com/iss/engines/stock/markets/shares/"
+    "boards/{board}/securities/{ticker}.json"
+    "?iss.meta=off&iss.only=marketdata"
+)
 
-def build_url(ticker: str, board: str) -> str:
-    return (
-        "https://iss.moex.com/iss/"
-        f"engines/stock/"
-        f"markets/{MARKET}/"
-        f"boards/{board}/"
-        f"securities/{ticker}.json"
-        "?iss.meta=off&iss.only=marketdata"
-    )
+MSK_TZ = timezone(timedelta(hours=3))
 
+# ================== ЛОГИКА ==================
 
-def extract_price_and_change(marketdata: dict):
-    columns = marketdata.get("columns", []) or []
-    rows = marketdata.get("data", []) or []
-
-    if not rows or not columns:
-        return None, None, None
-
-    row = rows[0]
-    idx = {c: i for i, c in enumerate(columns)}
-
-    def v(name):
-        return row[idx[name]] if name in idx else None
-
-    # ===== ДЕНЕЖНЫЕ ФОНДЫ / БПИФЫ =====
-    wap = v("WAPRICE")
-    wap_diff = v("WAPTOPREVWAPRICE")
-    wap_diff_pct = v("WAPTOPREVWAPRICEPRCNT")
-
-    if wap is not None:
-        return (
-            float(wap),
-            float(wap_diff) if wap_diff is not None else None,
-            float(wap_diff_pct) if wap_diff_pct is not None else None,
-        )
-
-    # ===== ФОЛБЭК ДЛЯ АКЦИЙ / ETF =====
-    price = v("LAST") or v("MARKETPRICE")
-    prev = v("PREVPRICE") or v("LCLOSEPRICE")
-
-    if price is not None and prev not in (None, 0):
-        diff_abs = price - prev
-        diff_pct = diff_abs / prev * 100
-        return float(price), float(diff_abs), float(diff_pct)
-
-    return None, None, None
-
-
-def get_price(ticker: str, board: str):
-    url = build_url(ticker, board)
-    print("REQUEST:", url)
-
+def fetch_marketdata(ticker: str, board: str):
+    url = MOEX_URL_TEMPLATE.format(ticker=ticker, board=board)
     r = requests.get(url, timeout=10)
     r.raise_for_status()
-    data = r.json()
+    data = r.json().get("marketdata", {})
+    columns = data.get("columns", [])
+    rows = data.get("data", [])
+    if not rows:
+        return None
+    return dict(zip(columns, rows[0]))
 
-    marketdata = data.get("marketdata", {})
-    return extract_price_and_change(marketdata)
+
+def format_price_change(change, percent):
+    sign = "+" if change > 0 else ""
+    return f"{sign}{change:.4f} ₽ ({sign}{percent:.2f}%)"
+
+
+def build_message():
+    now_msk = datetime.now(MSK_TZ).strftime("%d.%m.%Y %H:%M")
+    lines = [f"📊 Цены фондов\n{now_msk}\n"]
+
+    for inst in INSTRUMENTS:
+        ticker = inst["ticker"]
+        board = inst["board"]
+        name = inst["name"]
+        buy_price = inst.get("buy_price")
+
+        lines.append(f"{name} ({ticker})")
+
+        try:
+            md = fetch_marketdata(ticker, board)
+            if not md or md.get("WAPRICE") is None:
+                lines.append("нет торговых данных\n")
+                continue
+
+            price = float(md["WAPRICE"])
+            lines.append(f"Цена: {price:.4f} ₽")
+
+            day_change = md.get("WAPTOPREVWAPRICE")
+            day_percent = md.get("WAPTOPREVWAPRICEPRCNT")
+
+            if day_change is not None and day_percent is not None:
+                lines.append(
+                    "Изменение за день: "
+                    + format_price_change(float(day_change), float(day_percent))
+                )
+            else:
+                lines.append("Изменение за день: нет данных")
+
+            if buy_price:
+                diff = price - buy_price
+                diff_pct = diff / buy_price * 100
+                sign = "+" if diff > 0 else ""
+                lines.append(
+                    f"С покупки: {sign}{diff:.4f} ₽ ({sign}{diff_pct:.2f}%)"
+                )
+
+            lines.append("")
+
+        except Exception as e:
+            lines.append(f"ошибка получения данных\n")
+
+    return "\n".join(lines).strip()
 
 
 def send_message(text: str):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     for chat_id in CHAT_IDS:
+        if not chat_id:
+            continue
         requests.post(
             url,
             json={
@@ -117,37 +128,8 @@ def send_message(text: str):
 
 
 def main():
-    msk = timezone(timedelta(hours=3))
-    now = datetime.now(msk).strftime("%d.%m.%Y %H:%M")
-
-    lines = [f"📊 Цены фондов\n{now}\n"]
-
-    for inst in INSTRUMENTS:
-        ticker = inst["ticker"]
-        board = inst["board"]
-        name = inst.get("name", ticker)
-
-        price, diff_abs, diff_pct = get_price(ticker, board)
-
-        if price is None:
-            lines.append(f"{name} ({ticker})\nнет торговых данных\n")
-            continue
-
-        text = f"{name} ({ticker})\nЦена: {price:.4f} ₽\n"
-
-        if diff_abs is not None:
-            sign = "+" if diff_abs >= 0 else ""
-            text += f"Изменение: {sign}{diff_abs:.4f} ₽"
-            if diff_pct is not None:
-                text += f" ({sign}{diff_pct:.2f}%)"
-            text += "\n"
-        else:
-            text += "Изменение: нет данных\n"
-
-        lines.append(text)
-        time.sleep(0.3)
-
-    send_message("\n".join(lines))
+    message = build_message()
+    send_message(message)
 
 
 if __name__ == "__main__":
