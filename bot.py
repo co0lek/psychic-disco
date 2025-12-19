@@ -31,8 +31,8 @@ INSTRUMENTS = [
         "name": "ВИМ Казначейский",
     },
     {
-        "ticker": "RU000A1002S8",
-        "board": "TQIF",
+        "ticker": "OBLG",
+        "board": "TQTF",
         "name": "Российские облигации",
     },
 ]
