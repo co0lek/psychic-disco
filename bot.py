@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 
 # ================== НАСТРОЙКИ ==================
 
-INSTRUMENTS = [
+INSTRUMENTS = [ # здесь все записывать
     {
         "ticker": "LQDT",
         "board": "TQTF",
