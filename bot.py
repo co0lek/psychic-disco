@@ -6,7 +6,10 @@ import time
 # ================= НАСТРОЙКИ =================
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
-CHAT_ID = os.environ["CHAT_ID"]
+CHAT_IDS = [
+    os.environ["CHAT_ID"],
+    os.environ["CHAT_ID_WIFE"],
+] 
 
 MARKET = "shares"
 
@@ -102,14 +105,15 @@ def get_price(ticker: str, board: str):
 
 def send_message(text: str):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    requests.post(
-        url,
-        json={
-            "chat_id": CHAT_ID,
-            "text": text,
-        },
-        timeout=10,
-    )
+    for chat_id in CHAT_IDS:
+        requests.post(
+            url,
+            json={
+                "chat_id": chat_id,
+                "text": text,
+            },
+            timeout=10,
+        )
 
 
 def main():
