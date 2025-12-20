@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-BOT_TOKEN = os.environ["BOT_TOKEN"]
+BOT_TOKEN = os.environ["TELEGRAM_TOKEN"]
 
 CHAT_IDS = [
     os.environ["CHAT_ID"],
@@ -94,7 +94,7 @@ def build_message():
         qty = inst["quantity"]
         buy_price = inst["buy_price"]
 
-        lines.append(f"{name} (`{ticker}`)")
+        lines.append(f"*{name} (`{ticker}`)*")
 
         if result is None:
             lines.append("нет торговых данных")
