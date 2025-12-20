@@ -156,3 +156,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+print("CHAT_ID:", os.environ.get("CHAT_ID"))
+print("CHAT_ID_WIFE:", os.environ.get("CHAT_ID_WIFE"))
