@@ -16,8 +16,8 @@ INSTRUMENTS = [
         "ticker": "RU000A108ZB2",
         "board": "TQIF",
         "name": "2хОФЗ",
-        "buy_price": 153650.0,
-        "quantity": 4,
+        "buy_price": 153700.0,
+        "quantity": 2,
     },
     {
         "ticker": "RU000A0JR2C1",
