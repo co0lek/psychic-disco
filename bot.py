@@ -37,10 +37,7 @@ INSTRUMENTS = [ # здесь все записывать
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 
-CHAT_IDS = [
-    os.environ["CHAT_ID"],
-    os.environ["CHAT_ID_WIFE"],
-]
+CHAT_IDS = []
 
 print("CHAT_ID:", os.environ.get("CHAT_ID"))
 print("CHAT_ID_WIFE:", os.environ.get("CHAT_ID_WIFE"))
