@@ -98,7 +98,7 @@ def build_message():
         qty = inst["quantity"]
         buy_price = inst["buy_price"]
 
-        lines.append(f"{name} (`{ticker}`)")
+        lines.append(f"*{name}* (`{ticker}`)")
 
         if not data or data["price"] is None:
             lines.append("нет торговых данных")
