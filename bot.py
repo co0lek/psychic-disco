@@ -16,7 +16,7 @@ INSTRUMENTS = [
         "board": "TQTF",
         "name": "Ликвидность",
         "buy_price": 1.8630,
-        "quantity": 585780,
+        "quantity": 499619,
     },
     {
         "ticker": "RU000A108ZB2",
