@@ -1,14 +1,16 @@
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, date
 from zoneinfo import ZoneInfo
 
-BOT_TOKEN = os.environ["TELEGRAM_TOKEN"]
+BOT_TOKEN = os.environ["BOT_TOKEN"]
 
 CHAT_IDS = [
     os.environ["CHAT_ID"],
     os.environ.get("CHAT_ID_WIFE"),
 ]
+
+PORTFOLIO_START_DATE = date(2025, 12, 5)
 
 INSTRUMENTS = [
     {
@@ -80,6 +82,7 @@ def get_market_data(inst):
 def build_message():
     tz = ZoneInfo("Europe/Moscow")
     now = datetime.now(tz)
+    today = now.date()
 
     lines = [
         "📊 Цены фондов",
@@ -98,7 +101,7 @@ def build_message():
         qty = inst["quantity"]
         buy_price = inst["buy_price"]
 
-        lines.append(f"*{name}* (`{ticker}`)")
+        lines.append(f"{name} (`{ticker}`)")
 
         if not data or data["price"] is None:
             lines.append("нет торговых данных")
@@ -139,8 +142,8 @@ def build_message():
 
         total_delta = value - buy_value
         total_delta_pct = total_delta / buy_value * 100
-
         emoji_total = "📈" if total_delta > 0 else "📉"
+
         lines.append(
             f"С покупки (всего): {emoji_total} {total_delta:+,.2f} ₽ ({total_delta_pct:+.2f}%)"
         )
@@ -156,6 +159,18 @@ def build_message():
             f"Стоимость: {total_value:,.2f} ₽",
             f"Результат: {emoji} {total_delta:+,.2f} ₽ ({total_delta_pct:+.2f}%)",
         ])
+
+        days = (today - PORTFOLIO_START_DATE).days
+        if days > 0:
+            annual_return = ((total_value / total_buy) ** (365 / days) - 1) * 100
+            emoji_year = "📈" if annual_return > 0 else "📉"
+
+            lines.extend([
+                "",
+                "📅 Доходность портфеля",
+                f"С даты покупки ({PORTFOLIO_START_DATE.strftime('%d.%m.%Y')}):",
+                f"{emoji_year} {annual_return:.2f}% годовых",
+            ])
 
     return "\n".join(lines)
 
