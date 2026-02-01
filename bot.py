@@ -3,6 +3,13 @@ import requests
 from datetime import datetime, date
 from zoneinfo import ZoneInfo
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+def is_weekend():
+    now = datetime.now(ZoneInfo("Europe/Moscow"))
+    return now.weekday() >= 5  # 5 = суббота, 6 = воскресенье
+
 BOT_TOKEN = os.environ["TELEGRAM_TOKEN"]
 
 CHAT_IDS = [
@@ -192,6 +199,8 @@ def send_message(text):
 
 
 def main():
+    if is_weekend():
+        return
     send_message(build_message())
 
 
