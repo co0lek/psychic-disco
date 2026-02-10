@@ -24,15 +24,8 @@ INSTRUMENTS = [
         "ticker": "LQDT",
         "board": "TQTF",
         "name": "Ликвидность",
-        "buy_price": 1.8630,
-        "quantity": 499619,
-    },
-    {
-        "ticker": "RU000A108ZB2",
-        "board": "TQIF",
-        "name": "2хОФЗ",
-        "buy_price": 153650.0,
-        "quantity": 2,
+        "buy_price": 1.8635,
+        "quantity": 504000,
     },
     {
         "ticker": "RU000A0JR2C1",
@@ -45,8 +38,8 @@ INSTRUMENTS = [
         "ticker": "OBLG",
         "board": "TQTF",
         "name": "Российские облигации",
-        "buy_price": 187.1,
-        "quantity": 5335,
+        "buy_price": 188.41,
+        "quantity": 6806,
     },
 ]
 
