@@ -24,8 +24,8 @@ INSTRUMENTS = [
         "ticker": "LQDT",
         "board": "TQTF",
         "name": "Ликвидность",
-        "buy_price": 1.8635,
-        "quantity": 504000,
+        "buy_price": 1.8631,
+        "quantity": 552897,
     },
     {
         "ticker": "RU000A0JR2C1",
