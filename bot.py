@@ -32,7 +32,7 @@ INSTRUMENTS = [
         "board": "TQIF",
         "name": "ВИМ Казначейский",
         "buy_price": 103.45,
-        "quantity": 9660,
+        "quantity": 5960,
     },
     {
         "ticker": "OBLG",
