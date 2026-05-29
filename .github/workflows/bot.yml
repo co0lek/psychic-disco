@@ -5,7 +5,7 @@ on:
     # 12:00 МСК (09:00 UTC)
     # - cron: "0 9 * * *"
     # 18:00 МСК (15:00 UTC)
-    - cron: "0 15 * * *"
+    - cron: "0 12 * * *"
   workflow_dispatch:
 
 jobs:
